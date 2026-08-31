@@ -125,69 +125,79 @@
 
 </div>
 
-<script src="data.js"></script>
 <script>
 const params = new URLSearchParams(window.location.search);
-const id = parseInt(params.get('id'), 10);
-const learner = window.STUDERIA_LEARNERS.find(l => l.id === id);
+const id = params.get('id');
 
 function fmtDate(d){
   if(!d) return null;
   return d.toLocaleDateString('fr-FR', {day:'numeric', month:'long', year:'numeric'});
 }
-function fmtEUR(n){
-  return n.toLocaleString('fr-FR', {style:'currency', currency:'EUR', maximumFractionDigits:0});
-}
 function statutPillClass(s){
   return s==="Terminée" ? "green" : s==="En cours" ? "blue" : s==="Vérifiée" ? "amber" : "clay";
 }
-function onboardPillClass(s){
-  return s==="Complet" ? "green" : s==="En cours" ? "blue" : "clay";
+function parseRdv(raw){
+  if(!raw) return null;
+  const m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
+  if(!m) return null;
+  const [, d, mo, y, h, mi] = m;
+  return new Date(+y, +mo-1, +d, h?+h:0, mi?+mi:0);
+}
+function na(value, fallback){
+  return value ? value : `<span class="pill amber">${fallback || 'Non renseigné dans Airtable'}</span>`;
 }
 
-function triggerDownload(filename, text){
-  const blob = new Blob([text], {type: "text/plain;charset=utf-8"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
+fetch('/api/learners')
+  .then(r => { if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+  .then(data => {
+    if(data.error) throw new Error(data.error);
+    const learner = data.learners.find(l => l.id === id);
+    if(!learner){
+      document.getElementById('content').innerHTML = `<div class="not-found">
+        <p>Apprenant introuvable pour l'id « ${id || '(vide)'} ».</p>
+        <p><a class="back-link" href="index.html" style="display:inline">← Retour au dashboard</a></p>
+      </div>`;
+      return;
+    }
+    learner.rdvDate = parseRdv(learner.rdvRaw);
+    renderLearner(learner);
+  })
+  .catch(err => {
+    document.getElementById('content').innerHTML = `<div class="not-found">
+      <p><strong>Impossible de charger les données Airtable.</strong></p>
+      <p style="font-size:13px">${err.message}</p>
+      <p><a class="back-link" href="index.html" style="display:inline">← Retour au dashboard</a></p>
+    </div>`;
+  });
 
-if(!learner){
-  document.getElementById('content').innerHTML = `<div class="not-found">
-    <p>Apprenant introuvable (id manquant ou invalide).</p>
-    <p><a class="back-link" href="index.html" style="display:inline">← Retour au dashboard</a></p>
-  </div>`;
-} else {
+function renderLearner(learner){
   document.title = `Studeria — ${learner.name}`;
 
   document.getElementById('content').innerHTML = `
     <header>
       <div>
         <div class="title">${learner.name}</div>
-        <div class="sub">${learner.programme} · Coach ${learner.coach}</div>
+        <div class="sub">${learner.programme || 'Programme non renseigné'} · Coach ${learner.coach || 'non assigné'}</div>
       </div>
-      <div class="idbadge">ID apprenant #${String(learner.id).padStart(4,'0')}<br>Statut formation : <span class="pill ${statutPillClass(learner.statut)}">${learner.statut}</span></div>
+      <div class="idbadge">Statut formation : <span class="pill ${statutPillClass(learner.statut)}">${learner.statut}</span></div>
     </header>
 
     <section class="block">
       <div class="block-head"><h2>Identité</h2></div>
       <div class="grid2">
         <div class="field"><div class="label">Nom complet</div><div class="value">${learner.name}</div></div>
-        <div class="field"><div class="label">Email</div><div class="value">${learner.email}</div></div>
-        <div class="field"><div class="label">Téléphone</div><div class="value">${learner.phone}</div></div>
-        <div class="field"><div class="label">Programme</div><div class="value">${learner.programme}</div></div>
+        <div class="field"><div class="label">Email</div><div class="value">${learner.email || '—'}</div></div>
+        <div class="field"><div class="label">Téléphone</div><div class="value">${learner.phone || '—'}</div></div>
+        <div class="field"><div class="label">Programme</div><div class="value">${learner.programme || '—'}</div></div>
       </div>
     </section>
 
     <section class="block">
-      <div class="block-head"><h2>Onboarding</h2><span class="pill ${onboardPillClass(learner.onboarding.status)}">${learner.onboarding.status}</span></div>
+      <div class="block-head"><h2>Onboarding</h2></div>
       <div class="onboard-steps">
-        <div class="step ${learner.onboarding.adbFilled ? 'done':'pending'}"><span class="dot"></span>Dossier ADB</div>
-        <div class="step ${learner.onboarding.conventionSigned ? 'done':'pending'}"><span class="dot"></span>Convention signée</div>
-        <div class="step ${learner.onboarding.kickoffDone ? 'done':'pending'}"><span class="dot"></span>RDV de démarrage</div>
-        <div class="step ${learner.onboarding.platformAccess ? 'done':'pending'}"><span class="dot"></span>Accès plateforme</div>
+        <div class="step ${learner.adbStatus ? 'done':'pending'}"><span class="dot"></span>ADB : ${learner.adbStatus || 'non renseigné'}</div>
+        <div class="step ${learner.contractStatus ? 'done':'pending'}"><span class="dot"></span>Contrat : ${learner.contractStatus || 'non renseigné'}</div>
+        <div class="step ${learner.coaching==='Terminé' || learner.coaching==='En cours' ? 'done':'pending'}"><span class="dot"></span>Coaching individuel : ${learner.coaching}</div>
       </div>
     </section>
 
@@ -198,59 +208,35 @@ if(!learner){
 
     <section class="block">
       <div class="block-head"><h2>Financement</h2></div>
-      <div class="grid3">
-        <div class="field"><div class="label">Type de financement</div><div class="value">${learner.financing.type}</div></div>
-        <div class="field"><div class="label">Montant formation</div><div class="value">${fmtEUR(learner.financing.totalAmount)}</div></div>
-        <div class="field"><div class="label">Facturation</div><div class="value"><span class="pill ${learner.financing.invoiced ? 'green':'amber'}">${learner.financing.invoiced ? 'Facturée' : 'Non facturée'}</span></div></div>
-      </div>
-      <div style="margin-top:16px;">
-        <div class="finance-row" style="border:none; padding-bottom:0;">
-          <div class="label">Paiement</div>
-          <div class="value">${learner.financing.pctPaid}%</div>
-        </div>
-        <div class="bar"><span style="width:${learner.financing.pctPaid}%"></span></div>
-      </div>
-      <div class="link-box">
-        <code>https://pay.studeria.fr/encaissement/${learner.id}</code>
-        <button class="copy-btn" id="copyLinkBtn">Copier le lien</button>
+      <div class="grid2">
+        <div class="field"><div class="label">Montant formation</div><div class="value">${learner.montantFormation || na(null)}</div></div>
+        <div class="field"><div class="label">Montant payé</div><div class="value">${learner.montantPaye || na(null)}</div></div>
       </div>
     </section>
 
     <section class="block">
-      <div class="block-head"><h2>Encaissement</h2></div>
+      <div class="block-head"><h2>Prochain rendez-vous</h2></div>
       <div class="grid2">
-        <div class="field"><div class="label">Montant perçu</div><div class="value">${fmtEUR(learner.financing.amountCollected)}</div></div>
-        <div class="field"><div class="label">Montant à percevoir</div><div class="value">${fmtEUR(learner.financing.amountDue)}</div></div>
+        <div class="field"><div class="label">Date</div><div class="value">${learner.rdvDate ? fmtDate(learner.rdvDate) : '—'}</div></div>
+        <div class="field"><div class="label">Type de suivi</div><div class="value">${learner.typeSuivi || '—'}</div></div>
       </div>
     </section>
   `;
 
-  const docIcons = { Programme: "📘", Convention: "📄", ADB: "🗂️", Livret: "📖", Attestation: "🏅" };
-  document.getElementById('docList').innerHTML = learner.documents.map(doc => `
+  const docs = [
+    { name: "Contrat / Convention (PandaDoc)", url: learner.lienPandaDoc },
+    { name: "Accès plateforme (Softr)", url: learner.lienSoftr },
+  ];
+  document.getElementById('docList').innerHTML = docs.map(doc => `
     <div class="doc-row">
-      <div class="doc-name">${docIcons[doc.kind] || "📄"} ${doc.name}</div>
+      <div class="doc-name">📄 ${doc.name}</div>
       <div class="doc-meta">
-        ${doc.statusLabel ? `<span class="pill ${doc.available ? 'green' : 'amber'}">${doc.statusLabel}</span>` : (doc.available ? '' : '<span class="pill clay">Non disponible</span>')}
-        <button class="dl-btn" data-doc="${doc.name}" ${doc.available ? '' : 'disabled'}>Télécharger</button>
+        ${doc.url
+          ? `<a class="dl-btn" style="text-decoration:none; display:inline-block;" href="${doc.url}" target="_blank" rel="noopener">Ouvrir</a>`
+          : `<span class="pill amber">Non disponible</span><button class="dl-btn" disabled>Ouvrir</button>`}
       </div>
     </div>
   `).join('');
-
-  document.querySelectorAll('.dl-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const docName = btn.dataset.doc;
-      const content = `Studeria — ${docName}\nApprenant : ${learner.name}\nProgramme : ${learner.programme}\n\n(Document de démonstration — à remplacer par le vrai fichier une fois connecté à Airtable/Drive.)`;
-      triggerDownload(`${docName.replace(/\s+/g,'_')}_${learner.lastName}.txt`, content);
-    });
-  });
-
-  document.getElementById('copyLinkBtn').addEventListener('click', ()=>{
-    navigator.clipboard.writeText(`https://pay.studeria.fr/encaissement/${learner.id}`);
-    const btn = document.getElementById('copyLinkBtn');
-    const original = btn.textContent;
-    btn.textContent = "Copié !";
-    setTimeout(()=> btn.textContent = original, 1500);
-  });
 }
 </script>
 </body>
