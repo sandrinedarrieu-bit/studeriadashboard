@@ -301,9 +301,35 @@
 
 </div>
 
-<script src="data.js"></script>
+<div id="loadingState" style="padding:60px 0; text-align:center; color:var(--ink-soft);">Chargement des données depuis Airtable…</div>
+
 <script>
-const learners = window.STUDERIA_LEARNERS;
+function parseRdv(raw){
+  if(!raw) return null;
+  // formats attendus: "18/5/2026 17:30" ou "18/5/2026"
+  const m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
+  if(!m) return null;
+  const [, d, mo, y, h, mi] = m;
+  return new Date(+y, +mo-1, +d, h?+h:0, mi?+mi:0);
+}
+
+fetch('/api/learners')
+  .then(r => {
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  })
+  .then(data => {
+    if(data.error) throw new Error(data.error);
+    const learners = data.learners.map(l => ({...l, rdvDate: parseRdv(l.rdvRaw)}));
+    document.getElementById('loadingState').remove();
+    initDashboard(learners);
+  })
+  .catch(err => {
+    document.getElementById('loadingState').innerHTML =
+      `<p><strong>Impossible de charger les données Airtable.</strong></p><p style="font-size:13px">${err.message}</p>`;
+  });
+
+function initDashboard(learners) {
 
 // ---------- Aggregates ----------
 const total = learners.length;
@@ -512,6 +538,8 @@ document.querySelectorAll('.alert-card').forEach(btn=>{
 });
 
 render();
+
+} // fin initDashboard
 </script>
 </body>
 </html>
