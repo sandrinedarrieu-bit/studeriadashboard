@@ -7,28 +7,33 @@ const TABLE_ID = "tblLxRw2bp3TTAE11";
 
 function mapStatut(raw) {
   switch (raw) {
-    case "terminated": return "Terminée";
-    case "inTraining": return "En cours";
-    case "verified": return "Vérifiée";
-    case "interrupted": return "Interrompue";
-    default: return raw || "Inconnu";
+    case "terminated":
+      return "Terminée";
+    case "inTraining":
+      return "En cours";
+    case "verified":
+      return "Vérifiée";
+    case "interrupted":
+      return "Interrompue";
+    default:
+      return raw || "Inconnu";
   }
 }
 
-function mapCoaching(raw) {
-  if (!raw) return "Inconnu";
-  if (raw.includes("terminé")) return "Terminé";
-  if (raw.includes("en cours")) return "En cours";
-  if (raw.includes("pas commencé")) return "Pas commencé";
-  return raw;
-}
-
 export default async function handler(req, res) {
+  if (req.method !== "GET") {
+    return res.status(405).json({
+      error: "Méthode non autorisée",
+    });
+  }
+
   const token = process.env.AIRTABLE_TOKEN;
 
   if (!token) {
-    res.status(500).json({ error: "AIRTABLE_TOKEN manquant. Ajoute-le dans Vercel → Settings → Environment Variables." });
-    return;
+    return res.status(500).json({
+      error:
+        "AIRTABLE_TOKEN manquant. Ajoute-le dans Vercel → Settings → Environment Variables.",
+    });
   }
 
   let records = [];
@@ -36,50 +41,125 @@ export default async function handler(req, res) {
 
   try {
     do {
-      const url = new URL(`https://api.airtable.com/v0/${BASE_ID}/${TABLE_ID}`);
-      url.searchParams.set("pageSize", "100");
-      if (offset) url.searchParams.set("offset", offset);
+      const url = new URL(
+        `https://api.airtable.com/v0/${BASE_ID}/${TABLE_ID}`
+      );
 
-      const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      url.searchParams.set("pageSize", "100");
+
+      if (offset) {
+        url.searchParams.set("offset", offset);
+      }
+
+      const r = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
       if (!r.ok) {
         const text = await r.text();
-        throw new Error(`Airtable a répondu ${r.status}: ${text}`);
+
+        throw new Error(
+          `Airtable a répondu ${r.status}: ${text}`
+        );
       }
+
       const data = await r.json();
-      records = records.concat(data.records);
+
+      records = records.concat(data.records || []);
       offset = data.offset;
     } while (offset);
   } catch (err) {
-    res.status(502).json({ error: "Échec de récupération Airtable", detail: String(err) });
-    return;
+    return res.status(502).json({
+      error: "Échec de récupération Airtable",
+      detail: String(err),
+    });
   }
 
   const learners = records.map((rec) => {
-    const f = rec.fields;
-    const progressRaw = f["Progression (%)"] || "";
-    const progress = parseInt(String(progressRaw).replace("%", "").trim(), 10) || 0;
+    const f = rec.fields || {};
+
+    const progressRaw =
+      f["Progression (%)"] || "";
+
+    const progress =
+      parseInt(
+        String(progressRaw)
+          .replace("%", "")
+          .trim(),
+        10
+      ) || 0;
 
     return {
       id: rec.id,
-      name: f["Name"] || [f["Prénom"], f["Nom"]].filter(Boolean).join(" ") || "(Sans nom)",
-      email: f["Email"] || "",
-      phone: f["Téléphone"] || "",
-      programme: f["Programme / Offre"] || "",
-      coach: f["Coach référent"] || "",
-      typeSuivi: f["Type de suivi"] || "",
-      statut: mapStatut(f["Statut formation"]),
+
+      name:
+        f["Name"] ||
+        [f["Prénom"], f["Nom"]]
+          .filter(Boolean)
+          .join(" ") ||
+        "(Sans nom)",
+
+      email:
+        f["Email"] || "",
+
+      phone:
+        f["Téléphone"] || "",
+
+      programme:
+        f["Programme / Offre"] || "",
+
+      coach:
+        f["Coach référent"] || "",
+
+      typeSuivi:
+        f["Type de suivi"] || "",
+
+      statut:
+        mapStatut(
+          f["Statut formation"]
+        ),
+
       progress,
-      coaching: mapCoaching(f["Statut coaching individuel"] || ""),
-      rdvRaw: f["Prochain RDV"] || null,
-      adbStatus: f["Statut ADB"] || null,
-      contractStatus: f["Statut contrat"] || null,
-      montantFormation: f["Montant formation"] || null,
-      montantPaye: f["Montant payé"] || null,
-      lienPandaDoc: f["Lien contrat PandaDoc"] || null,
-      lienSoftr: f["Lien accès plateforme Softr"] || null,
+
+      rdvRaw:
+        f["Prochain RDV"] || null,
+
+      adbStatus:
+        f["Statut ADB"] || null,
+
+      contractStatus:
+        f["Statut contrat"] || null,
+
+      statutDossier:
+        f["Statut dossier"] || null,
+
+      dateDebut:
+        f["Date début formation"] || null,
+
+      montantFormation:
+        f["Montant formation"] || null,
+
+      montantPaye:
+        f["Montant payé"] || null,
+
+      lienPandaDoc:
+        f["Lien contrat PandaDoc"] || null,
+
+      lienSoftr:
+        f["Lien accès plateforme Softr"] || null,
     };
   });
 
-  res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=300");
-  res.status(200).json({ learners, count: learners.length, fetchedAt: new Date().toISOString() });
+  res.setHeader(
+    "Cache-Control",
+    "s-maxage=60, stale-while-revalidate=300"
+  );
+
+  return res.status(200).json({
+    learners,
+    count: learners.length,
+    fetchedAt: new Date().toISOString(),
+  });
 }
