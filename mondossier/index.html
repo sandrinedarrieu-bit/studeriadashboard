@@ -1,1 +1,303 @@
-<script src="/mondossier.js"></script>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Mon dossier de formation</title>
+
+  <link rel="stylesheet" href="/mondossier/dashboard.css">
+</head>
+
+<body>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">S</div>
+
+      <div>
+        <div class="brand-name">Studeria</div>
+        <div class="brand-subtitle">Mon espace formation</div>
+      </div>
+    </div>
+
+    <div class="user-email" id="headerEmail"></div>
+  </header>
+
+
+  <main class="container">
+
+    <!-- Chargement -->
+    <div id="loading" class="loading">
+      Chargement de votre dossier...
+    </div>
+
+
+    <!-- Erreur -->
+    <div id="errorBox" class="error-box hidden">
+      <h2>Impossible d'afficher votre dossier</h2>
+      <p id="errorMessage"></p>
+    </div>
+
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="hidden">
+
+      <!-- Bonjour -->
+      <section class="welcome">
+        <div>
+          <p class="eyebrow">MON ESPACE</p>
+
+          <h1>
+            Bonjour <span id="prenom"></span> 👋
+          </h1>
+
+          <p class="welcome-text">
+            Retrouvez ici les informations essentielles concernant votre formation et votre accompagnement.
+          </p>
+        </div>
+
+        <div class="status-badge" id="statutFormation">
+          Formation
+        </div>
+      </section>
+
+
+      <!-- Formation -->
+      <section class="card main-card">
+
+        <div class="card-header">
+          <div>
+            <p class="section-label">MA FORMATION</p>
+            <h2 id="programme">Formation</h2>
+          </div>
+
+          <div class="progress-number">
+            <span id="progressNumber">0</span>%
+          </div>
+        </div>
+
+
+        <div class="progress-bar">
+          <div
+            id="progressBar"
+            class="progress-fill"
+            style="width: 0%">
+          </div>
+        </div>
+
+        <p class="progress-caption">
+          Progression de votre parcours
+        </p>
+
+
+        <div class="info-grid">
+
+          <div class="info-item" id="coachBlock">
+            <span class="info-label">Coach référent</span>
+            <strong id="coach">—</strong>
+          </div>
+
+          <div class="info-item" id="typeSuiviBlock">
+            <span class="info-label">Type de suivi</span>
+            <strong id="typeSuivi">—</strong>
+          </div>
+
+          <div class="info-item" id="dateDebutBlock">
+            <span class="info-label">Début de formation</span>
+            <strong id="dateDebut">—</strong>
+          </div>
+
+          <div class="info-item" id="numeroDossierBlock">
+            <span class="info-label">N° de dossier</span>
+            <strong id="numeroDossier">—</strong>
+          </div>
+
+        </div>
+      </section>
+
+
+      <!-- Deux colonnes -->
+      <div class="columns">
+
+        <!-- RDV -->
+        <section class="card">
+
+          <p class="section-label">
+            MON ACCOMPAGNEMENT
+          </p>
+
+          <h2>Prochain rendez-vous</h2>
+
+          <div id="rdvDisponible" class="rdv-box">
+
+            <div class="calendar-icon">
+              📅
+            </div>
+
+            <div>
+              <div
+                id="prochainRdv"
+                class="rdv-date">
+                —
+              </div>
+
+              <div
+                id="coachRdv"
+                class="rdv-coach">
+              </div>
+            </div>
+
+          </div>
+
+          <div
+            id="aucunRdv"
+            class="empty-message hidden">
+            Aucun rendez-vous programmé pour le moment.
+          </div>
+
+        </section>
+
+
+        <!-- Dossier -->
+        <section class="card">
+
+          <p class="section-label">
+            MON DOSSIER
+          </p>
+
+          <h2>Suivi administratif</h2>
+
+          <div class="status-list">
+
+            <div
+              class="status-row"
+              id="dossierRow">
+
+              <span>
+                Statut du dossier
+              </span>
+
+              <span
+                class="mini-badge"
+                id="statutDossier">
+                —
+              </span>
+
+            </div>
+
+
+            <div
+              class="status-row"
+              id="contratRow">
+
+              <span>
+                Contrat
+              </span>
+
+              <span
+                class="mini-badge"
+                id="contractStatus">
+                —
+              </span>
+
+            </div>
+
+
+            <div
+              class="status-row"
+              id="adbRow">
+
+              <span>
+                Dossier administratif
+              </span>
+
+              <span
+                class="mini-badge"
+                id="adbStatus">
+                —
+              </span>
+
+            </div>
+
+          </div>
+
+        </section>
+
+      </div>
+
+
+      <!-- Accès -->
+      <section
+        class="card"
+        id="accessCard">
+
+        <p class="section-label">
+          MES ACCÈS
+        </p>
+
+        <h2>Documents et plateforme</h2>
+
+        <div class="actions">
+
+          <a
+            id="softrLink"
+            class="action-button primary hidden"
+            target="_blank"
+            rel="noopener noreferrer">
+
+            Accéder à ma plateforme
+          </a>
+
+
+          <a
+            id="pandadocLink"
+            class="action-button secondary hidden"
+            target="_blank"
+            rel="noopener noreferrer">
+
+            Voir mon contrat
+          </a>
+
+        </div>
+
+
+        <p
+          id="noAccess"
+          class="empty-message hidden">
+
+          Aucun accès ou document disponible pour le moment.
+
+        </p>
+
+      </section>
+
+
+      <!-- Contact -->
+      <section class="contact-card">
+
+        <div>
+          <strong>Une question sur votre parcours ?</strong>
+
+          <p>
+            Votre équipe Studeria reste disponible pour vous accompagner.
+          </p>
+        </div>
+
+        <a
+          id="contactLink"
+          class="contact-button">
+          Nous contacter
+        </a>
+
+      </section>
+
+    </div>
+
+  </main>
+
+
+  <script src="/mondossier.js"></script>
+
+</body>
+</html>
