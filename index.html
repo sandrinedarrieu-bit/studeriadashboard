@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studeria — Suivi des apprenants (1000)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #F7F5EF;
+    --ink: #1D2420;
+    --ink-soft: #5B655D;
+    --line: #D9D4C6;
+    --teal: #1F5D50;
+    --teal-soft: #E4EEE9;
+    --amber: #C4832E;
+    --amber-soft: #F5E9D6;
+    --clay: #B14B3D;
+    --clay-soft: #F4E3DF;
+    --blue: #35618C;
+    --blue-soft: #E1EAF1;
+    --card: #FFFFFF;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Space Grotesk', sans-serif;
+    padding: 48px 40px 90px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap{ max-width: 1120px; margin: 0 auto; }
+
+  header{
+    display:flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 22px;
+    margin-bottom: 36px;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  header .title{
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 38px;
+    letter-spacing: -0.01em;
+    line-height: 1.05;
+  }
+  header .sub{
+    color: var(--ink-soft);
+    font-size: 14.5px;
+    margin-top: 8px;
+    max-width: 46ch;
+  }
+  header .date{
+    font-size: 13px;
+    color: var(--ink-soft);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .stats{
+    display:grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin-bottom: 44px;
+  }
+  .stat{ background: var(--card); padding: 20px 18px; }
+  .stat .num{ font-family: 'Fraunces', serif; font-size: 30px; font-weight: 500; line-height: 1; }
+  .stat .label{ margin-top: 8px; font-size: 12.5px; color: var(--ink-soft); }
+  .stat.accent .num{ color: var(--teal); }
+
+  section.block{ margin-bottom: 48px; }
+  .block-head{ display:flex; justify-content: space-between; align-items: baseline; margin-bottom: 18px; flex-wrap: wrap; gap: 8px; }
+  .block-head h2{ font-family: 'Fraunces', serif; font-weight: 600; font-size: 21px; margin: 0; }
+  .block-head .note{ font-size: 12.5px; color: var(--ink-soft); }
+
+  .charts-grid{
+    display:grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 40px;
+  }
+  @media (max-width: 860px){ .charts-grid{ grid-template-columns: 1fr; } }
+
+  .hbar-row{ display:grid; grid-template-columns: 150px 1fr 46px; align-items:center; gap:10px; padding: 7px 0; }
+  .hbar-row .name{ font-size: 13px; color: var(--ink-soft); }
+  .hbar-track{ height: 10px; background:#EDEAE0; border-radius: 3px; overflow:hidden; }
+  .hbar-fill{ height:100%; border-radius:3px; }
+  .hbar-row .val{ font-size: 12.5px; text-align:right; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+
+  .alerts{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+  @media (max-width: 860px){ .alerts{ grid-template-columns: repeat(2,1fr); } }
+  .alert-card{
+    background: var(--card);
+    padding: 18px;
+    cursor: pointer;
+    border: none;
+    text-align: left;
+    font-family: inherit;
+    color: inherit;
+    transition: background .15s ease;
+  }
+  .alert-card:hover{ background: #FBF9F4; }
+  .alert-card .num{ font-family:'Fraunces', serif; font-size: 26px; font-weight: 500; }
+  .alert-card .label{ margin-top: 6px; font-size: 12.5px; color: var(--ink-soft); line-height:1.4; }
+  .alert-card .cta{ margin-top:10px; font-size:11.5px; color: var(--teal); font-weight:600; }
+
+  /* Filter bar */
+  .filters{
+    display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+    margin-bottom: 14px;
+  }
+  .filters input[type=text]{
+    flex: 1 1 220px;
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    font-family: inherit;
+    font-size: 13.5px;
+    border-radius: 3px;
+  }
+  .filters select{
+    padding: 9px 10px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    font-family: inherit;
+    font-size: 13.5px;
+    border-radius: 3px;
+    color: var(--ink);
+  }
+  .filters button.reset{
+    padding: 9px 14px;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+    font-family: inherit;
+    font-size: 13px;
+    border-radius: 3px;
+    cursor:pointer;
+  }
+  .result-count{ font-size:12.5px; color:var(--ink-soft); margin-bottom: 12px; }
+
+  table{ width:100%; border-collapse: collapse; font-size: 13.5px; }
+  thead th{
+    text-align:left;
+    font-weight: 600;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    padding: 8px 10px;
+    border-bottom: 2px solid var(--ink);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  thead th.sorted::after{ content: " ↕"; color: var(--teal); }
+  tbody td{ padding: 10px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tbody tr:hover{ background: #FBF9F4; }
+  .cell-name .full{ font-weight: 500; }
+  .cell-name .email{ font-size: 11.5px; color: var(--ink-soft); }
+  .pill{ font-size: 11px; padding: 3px 9px; border-radius: 100px; font-weight: 500; white-space: nowrap; display:inline-block; }
+  .pill.green{ background: var(--teal-soft); color: var(--teal); }
+  .pill.amber{ background: var(--amber-soft); color: var(--amber); }
+  .pill.blue{ background: var(--blue-soft); color: var(--blue); }
+  .pill.clay{ background: var(--clay-soft); color: var(--clay); }
+  .prog-cell{ display:flex; align-items:center; gap:8px; min-width: 120px; }
+  .prog-cell .bar{ flex:1; height:6px; background:#EDEAE0; border-radius:3px; overflow:hidden; }
+  .prog-cell .bar>span{ display:block; height:100%; }
+  .prog-cell .pct{ font-size:12px; width: 32px; text-align:right; font-variant-numeric: tabular-nums; color: var(--ink-soft); }
+  .rdv-none{ color: var(--clay); font-size: 12.5px; }
+
+  .pagination{
+    display:flex; justify-content: space-between; align-items:center;
+    margin-top: 16px; font-size: 13px; color: var(--ink-soft);
+  }
+  .pagination .ctrl{ display:flex; gap:8px; align-items:center; }
+  .pagination button{
+    padding: 7px 13px; border:1px solid var(--line); background: var(--card);
+    font-family: inherit; font-size: 13px; border-radius: 3px; cursor:pointer;
+  }
+  .pagination button:disabled{ opacity:.4; cursor:default; }
+
+  footer{
+    margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--line);
+    font-size: 12px; color: var(--ink-soft); line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="title">Suivi des apprenants</div>
+      <div class="sub">Vue de pilotage sur l'ensemble de la cohorte Studeria — indicateurs globaux, alertes et recherche individuelle.</div>
+    </div>
+    <div class="date">Mis à jour le 31 août 2026 · données simulées à titre de démonstration</div>
+  </header>
+
+  <div class="stats" id="statsBand"></div>
+
+  <section class="block">
+    <div class="block-head">
+      <h2>Répartition de la cohorte</h2>
+      <div class="note">Sur 1000 apprentis</div>
+    </div>
+    <div class="charts-grid">
+      <div>
+        <div class="block-head" style="margin-bottom:10px;"><h2 style="font-size:15px;">Progression</h2></div>
+        <div id="progChart"></div>
+      </div>
+      <div>
+        <div class="block-head" style="margin-bottom:10px;"><h2 style="font-size:15px;">Statut de formation</h2></div>
+        <div id="statutChart"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head">
+      <h2>Charge par coach</h2>
+      <div class="note">Nombre d'apprentis suivis, 10 coachs les plus chargés</div>
+    </div>
+    <div id="coachChart"></div>
+  </section>
+
+  <section class="block">
+    <div class="block-head">
+      <h2>Alertes de suivi</h2>
+      <div class="note">Cliquer une alerte filtre le tableau ci-dessous</div>
+    </div>
+    <div class="alerts" id="alertsBand"></div>
+  </section>
+
+  <section class="block">
+    <div class="block-head">
+      <h2>Rechercher un apprenant</h2>
+      <div class="note" id="resultNote"></div>
+    </div>
+    <div class="filters">
+      <input type="text" id="searchInput" placeholder="Rechercher un nom ou un email…">
+      <select id="coachFilter"><option value="">Tous les coachs</option></select>
+      <select id="statutFilter">
+        <option value="">Tous les statuts</option>
+        <option value="Terminée">Terminée</option>
+        <option value="En cours">En cours</option>
+        <option value="Vérifiée">Vérifiée</option>
+        <option value="Interrompue">Interrompue</option>
+      </select>
+      <select id="programmeFilter">
+        <option value="">Tous les programmes</option>
+        <option value="Influenceur">Influenceur</option>
+        <option value="Incubateur Starter">Incubateur Starter</option>
+        <option value="Reconversion IA">Reconversion IA</option>
+      </select>
+      <button class="reset" id="resetBtn">Réinitialiser</button>
+    </div>
+    <div class="result-count" id="resultCount"></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th data-key="name">Apprenant</th>
+          <th data-key="programme">Programme</th>
+          <th data-key="coach">Coach</th>
+          <th data-key="statut">Statut formation</th>
+          <th data-key="progress">Progression</th>
+          <th data-key="coaching">Coaching individuel</th>
+          <th data-key="rdv">Prochain RDV</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+
+    <div class="pagination">
+      <div id="pageInfo"></div>
+      <div class="ctrl">
+        <button id="prevBtn">← Précédent</button>
+        <button id="nextBtn">Suivant →</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Dashboard de démonstration : 1000 apprentis générés de façon synthétique pour illustrer le passage à l'échelle
+    (vue d'ensemble → alertes → recherche filtrée), à connecter à la base Airtable réelle une fois les colonnes nettoyées.
+  </footer>
+
+</div>
+
+<script>
+// ---------- Seeded RNG for reproducible demo data ----------
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+}
+const rng = mulberry32(20260831);
+function pick(arr){ return arr[Math.floor(rng()*arr.length)]; }
+function randInt(min,max){ return Math.floor(rng()*(max-min+1))+min; }
+
+const firstNames = ["Benjamin","Sophie","Pauline","Francis","Claire","Antoine","Manon","Julien","Camille","Nicolas","Léa","Thomas","Marion","Guillaume","Chloé","Maxime","Amandine","Romain","Émilie","Baptiste","Laura","Kevin","Charlotte","Alexandre","Sarah","Mathieu","Justine","Damien","Lucie","Florian","Aurélie","Vincent","Céline","Jérôme","Élise","Fabien","Margaux","Sébastien","Noémie","Pierre-Yves","Hélène","Yohan","Anaïs","Cédric","Marine","Loïc","Émeline","Rémi","Ophélie","Bastien"];
+const lastNames = ["Boutboul","Edeine","Breillot","Bellamari","Girard","Moreau","Lefebvre","Rousseau","Fontaine","Chevalier","Gauthier","Perrin","Mercier","Blanchard","Guerin","Muller","Henry","Roussel","Nicolas","Perrot","Morin","Dumont","Aubert","Marchand","Renard","Klein","Fabre","Barbier","Colin","Brun","Dupuis","Julien","Leroux","Roy","Noel","Meyer","Robin","Masson","Duval","Menard"];
+const coaches = ["Nicolas Guyon","Nathalie Dupuy","Clément Cardinale","Hector Studeria","Sarah Fontanel","Julien Marchetti","Camille Vidal","Antoine Serra","Léa Fabron","Marc Delattre"];
+const programmes = ["Influenceur","Incubateur Starter","Reconversion IA"];
+
+const N = 1000;
+const learners = [];
+for(let i=0;i<N;i++){
+  const fn = pick(firstNames), ln = pick(lastNames);
+  const programme = pick(programmes);
+  const coach = pick(coaches);
+  // statut formation, weighted
+  const r = rng();
+  let statut;
+  if(r < 0.32) statut = "Terminée";
+  else if(r < 0.75) statut = "En cours";
+  else if(r < 0.90) statut = "Vérifiée";
+  else statut = "Interrompue";
+
+  let progress;
+  if(statut === "Terminée") progress = randInt(90,100);
+  else if(statut === "En cours") progress = randInt(8,89);
+  else if(statut === "Vérifiée") progress = rng() < 0.85 ? randInt(0,4) : randInt(5,15);
+  else progress = randInt(3,40);
+
+  const coachingR = rng();
+  const coaching = coachingR < 0.58 ? "Pas commencé" : (coachingR < 0.85 ? "En cours" : "Terminé");
+
+  const hasRdv = rng() < 0.88;
+  let rdvDate = null;
+  if(hasRdv){
+    const d = new Date(2026, 8, randInt(1,30)); // septembre 2026 approx window
+    d.setDate(d.getDate() + randInt(-20,55));
+    rdvDate = d;
+  }
+
+  learners.push({
+    id: i,
+    name: fn + " " + ln,
+    email: (fn+"."+ln).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"") + "@mail.fr",
+    programme, coach, statut, progress, coaching, rdvDate
+  });
+}
+
+// ---------- Aggregates ----------
+const total = learners.length;
+const termCount = learners.filter(l=>l.statut==="Terminée").length;
+const enCoursCount = learners.filter(l=>l.statut==="En cours").length;
+const coachingNonDemarre = learners.filter(l=>l.coaching==="Pas commencé").length;
+const avgProgress = Math.round(learners.reduce((s,l)=>s+l.progress,0)/total);
+
+document.getElementById('statsBand').innerHTML = `
+  <div class="stat accent"><div class="num">${total.toLocaleString('fr-FR')}</div><div class="label">Apprentis suivis</div></div>
+  <div class="stat"><div class="num">${avgProgress}%</div><div class="label">Progression moyenne</div></div>
+  <div class="stat"><div class="num">${Math.round(termCount/total*100)}%</div><div class="label">Formations terminées</div></div>
+  <div class="stat"><div class="num">${Math.round(enCoursCount/total*100)}%</div><div class="label">En cours de formation</div></div>
+  <div class="stat"><div class="num">${Math.round(coachingNonDemarre/total*100)}%</div><div class="label">Coaching individuel non démarré</div></div>
+`;
+
+// ---------- Progression distribution chart ----------
+const buckets = [
+  {label:"0–24%", min:0, max:24, color:"var(--clay)"},
+  {label:"25–49%", min:25, max:49, color:"var(--amber)"},
+  {label:"50–74%", min:50, max:74, color:"var(--blue)"},
+  {label:"75–100%", min:75, max:100, color:"var(--teal)"},
+];
+let progHtml = "";
+buckets.forEach(b=>{
+  const count = learners.filter(l=>l.progress>=b.min && l.progress<=b.max).length;
+  const pct = Math.round(count/total*100);
+  progHtml += `<div class="hbar-row"><div class="name">${b.label}</div><div class="hbar-track"><div class="hbar-fill" style="width:${pct}%; background:${b.color}"></div></div><div class="val">${count}</div></div>`;
+});
+document.getElementById('progChart').innerHTML = progHtml;
+
+// ---------- Statut breakdown chart ----------
+const statutColors = {"Terminée":"var(--teal)","En cours":"var(--blue)","Vérifiée":"var(--amber)","Interrompue":"var(--clay)"};
+let statutHtml = "";
+["Terminée","En cours","Vérifiée","Interrompue"].forEach(s=>{
+  const count = learners.filter(l=>l.statut===s).length;
+  const pct = Math.round(count/total*100);
+  statutHtml += `<div class="hbar-row"><div class="name">${s}</div><div class="hbar-track"><div class="hbar-fill" style="width:${pct}%; background:${statutColors[s]}"></div></div><div class="val">${count}</div></div>`;
+});
+document.getElementById('statutChart').innerHTML = statutHtml;
+
+// ---------- Coach load chart ----------
+const coachCounts = {};
+learners.forEach(l=>{ coachCounts[l.coach] = (coachCounts[l.coach]||0)+1; });
+const sortedCoaches = Object.entries(coachCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+const maxCoachCount = sortedCoaches[0][1];
+let coachHtml = "";
+sortedCoaches.forEach(([name,count])=>{
+  const pct = Math.round(count/maxCoachCount*100);
+  coachHtml += `<div class="hbar-row"><div class="name">${name}</div><div class="hbar-track"><div class="hbar-fill" style="width:${pct}%; background:var(--teal)"></div></div><div class="val">${count}</div></div>`;
+});
+document.getElementById('coachChart').innerHTML = coachHtml;
+
+// ---------- Alerts ----------
+const verifStalled = learners.filter(l=>l.statut==="Vérifiée" && l.progress<5).length;
+const noRdv = learners.filter(l=>!l.rdvDate).length;
+const interrompue = learners.filter(l=>l.statut==="Interrompue").length;
+
+const alertsDef = [
+  {num: coachingNonDemarre, label: "apprentis n'ont pas encore démarré leur coaching individuel", filter: {coaching:"Pas commencé"}},
+  {num: verifStalled, label: "dossiers vérifiés sont toujours à moins de 5% de progression", filter: {statut:"Vérifiée"}},
+  {num: noRdv, label: "apprentis n'ont aucun rendez-vous programmé", filter: {noRdv:true}},
+  {num: interrompue, label: "parcours sont marqués comme interrompus", filter: {statut:"Interrompue"}},
+];
+document.getElementById('alertsBand').innerHTML = alertsDef.map((a,i)=>`
+  <button class="alert-card" data-alert="${i}">
+    <div class="num">${a.num}</div>
+    <div class="label">${a.label}</div>
+    <div class="cta">Voir la liste →</div>
+  </button>
+`).join('');
+
+// ---------- Filters, table, pagination ----------
+const coachFilterEl = document.getElementById('coachFilter');
+Object.keys(coachCounts).sort().forEach(c=>{
+  const opt = document.createElement('option');
+  opt.value = c; opt.textContent = c;
+  coachFilterEl.appendChild(opt);
+});
+
+let state = { search:"", coach:"", statut:"", programme:"", noRdv:false, coaching:"", sortKey:"name", sortDir:1, page:1 };
+const PAGE_SIZE = 50;
+
+function fmtDate(d){
+  if(!d) return null;
+  return d.toLocaleDateString('fr-FR', {day:'numeric', month:'short', year:'numeric'});
+}
+
+function pillClass(statut){
+  return statut==="Terminée" ? "green" : statut==="En cours" ? "blue" : statut==="Vérifiée" ? "amber" : "clay";
+}
+function coachingPillClass(c){
+  return c==="Terminé" ? "green" : c==="En cours" ? "blue" : "clay";
+}
+
+function getFiltered(){
+  return learners.filter(l=>{
+    if(state.search){
+      const q = state.search.toLowerCase();
+      if(!l.name.toLowerCase().includes(q) && !l.email.toLowerCase().includes(q)) return false;
+    }
+    if(state.coach && l.coach !== state.coach) return false;
+    if(state.statut && l.statut !== state.statut) return false;
+    if(state.programme && l.programme !== state.programme) return false;
+    if(state.noRdv && l.rdvDate) return false;
+    if(state.coaching && l.coaching !== state.coaching) return false;
+    return true;
+  });
+}
+
+function sortRows(rows){
+  const dir = state.sortDir;
+  return rows.slice().sort((a,b)=>{
+    let av, bv;
+    switch(state.sortKey){
+      case "name": av=a.name; bv=b.name; return dir*av.localeCompare(bv);
+      case "programme": av=a.programme; bv=b.programme; return dir*av.localeCompare(bv);
+      case "coach": av=a.coach; bv=b.coach; return dir*av.localeCompare(bv);
+      case "statut": av=a.statut; bv=b.statut; return dir*av.localeCompare(bv);
+      case "coaching": av=a.coaching; bv=b.coaching; return dir*av.localeCompare(bv);
+      case "progress": return dir*(a.progress-b.progress);
+      case "rdv":
+        av = a.rdvDate ? a.rdvDate.getTime() : Infinity;
+        bv = b.rdvDate ? b.rdvDate.getTime() : Infinity;
+        return dir*(av-bv);
+      default: return 0;
+    }
+  });
+}
+
+function render(){
+  const filtered = sortRows(getFiltered());
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  state.page = Math.min(state.page, totalPages);
+  const start = (state.page-1)*PAGE_SIZE;
+  const pageRows = filtered.slice(start, start+PAGE_SIZE);
+
+  document.getElementById('resultCount').textContent = `${filtered.length.toLocaleString('fr-FR')} apprenant${filtered.length>1?'s':''} correspondant${filtered.length>1?'s':''}`;
+
+  document.getElementById('tableBody').innerHTML = pageRows.map(l=>`
+    <tr>
+      <td class="cell-name"><div class="full">${l.name}</div><div class="email">${l.email}</div></td>
+      <td>${l.programme}</td>
+      <td>${l.coach}</td>
+      <td><span class="pill ${pillClass(l.statut)}">${l.statut}</span></td>
+      <td>
+        <div class="prog-cell">
+          <div class="bar"><span style="width:${l.progress}%; background:${l.progress>=75?'var(--teal)':l.progress>=50?'var(--blue)':l.progress>=25?'var(--amber)':'var(--clay)'}"></span></div>
+          <div class="pct">${l.progress}%</div>
+        </div>
+      </td>
+      <td><span class="pill ${coachingPillClass(l.coaching)}">${l.coaching}</span></td>
+      <td>${l.rdvDate ? fmtDate(l.rdvDate) : '<span class="rdv-none">Aucun</span>'}</td>
+    </tr>
+  `).join('');
+
+  document.getElementById('pageInfo').textContent = `Page ${state.page} / ${totalPages}`;
+  document.getElementById('prevBtn').disabled = state.page<=1;
+  document.getElementById('nextBtn').disabled = state.page>=totalPages;
+
+  document.querySelectorAll('thead th').forEach(th=>{
+    th.classList.toggle('sorted', th.dataset.key === state.sortKey);
+  });
+}
+
+document.getElementById('searchInput').addEventListener('input', e=>{ state.search = e.target.value; state.page=1; render(); });
+document.getElementById('coachFilter').addEventListener('change', e=>{ state.coach = e.target.value; state.page=1; render(); });
+document.getElementById('statutFilter').addEventListener('change', e=>{ state.statut = e.target.value; state.page=1; render(); });
+document.getElementById('programmeFilter').addEventListener('change', e=>{ state.programme = e.target.value; state.page=1; render(); });
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  state = { search:"", coach:"", statut:"", programme:"", noRdv:false, coaching:"", sortKey:"name", sortDir:1, page:1 };
+  document.getElementById('searchInput').value = "";
+  document.getElementById('coachFilter').value = "";
+  document.getElementById('statutFilter').value = "";
+  document.getElementById('programmeFilter').value = "";
+  render();
+});
+document.getElementById('prevBtn').addEventListener('click', ()=>{ state.page--; render(); });
+document.getElementById('nextBtn').addEventListener('click', ()=>{ state.page++; render(); });
+document.querySelectorAll('thead th').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const key = th.dataset.key;
+    if(state.sortKey === key) state.sortDir *= -1;
+    else { state.sortKey = key; state.sortDir = 1; }
+    render();
+  });
+});
+document.querySelectorAll('.alert-card').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const def = alertsDef[+btn.dataset.alert];
+    state = { search:"", coach:"", statut:"", programme:"", noRdv:false, coaching:"", sortKey:"progress", sortDir:1, page:1 };
+    document.getElementById('searchInput').value = "";
+    document.getElementById('coachFilter').value = "";
+    document.getElementById('statutFilter').value = "";
+    document.getElementById('programmeFilter').value = "";
+    if(def.filter.coaching){ state.coaching = def.filter.coaching; state.sortKey = "coaching"; }
+    if(def.filter.statut){ state.statut = def.filter.statut; document.getElementById('statutFilter').value = def.filter.statut; }
+    if(def.filter.noRdv){ state.noRdv = true; }
+    render();
+    document.getElementById('searchInput').scrollIntoView({behavior:'smooth', block:'center'});
+  });
+});
+
+render();
+</script>
+</body>
+</html>
