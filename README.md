@@ -1,25 +1,39 @@
 # Studeria — Dashboard de suivi des apprenants
 
-Site statique (HTML/CSS/JS, aucune dépendance serveur) avec 1000 apprenants simulés.
+Site statique + une fonction serveur Vercel, connecté en direct à Airtable.
 
-## Pages
+## Fichiers
 - `index.html` — dashboard : vue d'ensemble, alertes, recherche filtrée. Cliquer une ligne ouvre la fiche apprenant.
-- `detail.html?id=N` — fiche apprenant : identité, onboarding, documents (téléchargeables), financement, encaissement.
-- `data.js` — génération des données simulées, partagée par les deux pages (même seed = mêmes apprenants).
+- `detail.html?id=recXXXXXXXXXXXXXX` — fiche apprenant (identité, onboarding, documents, financement).
+- `api/learners.js` — fonction serveur Vercel qui va chercher les enregistrements dans Airtable (le token n'est jamais exposé au navigateur).
+
+## Configuration requise sur Vercel
+
+Dans le projet Vercel → **Settings → Environment Variables**, ajoute :
+
+| Nom | Valeur |
+|---|---|
+| `AIRTABLE_TOKEN` | Un Personal Access Token Airtable, scope `data.records:read`, limité à la base "Studeria essai" |
+
+Comment créer ce token :
+1. https://airtable.com/create/tokens
+2. "Create new token"
+3. Scopes : `data.records:read`
+4. Access : sélectionne uniquement la base "Studeria essai"
+5. Copie le token généré (visible une seule fois) et colle-le dans Vercel
+
+Après avoir ajouté la variable, redéploie le projet (Vercel → Deployments → "Redeploy" sur le dernier déploiement), sinon la fonction ne verra pas la nouvelle variable.
 
 ## Déployer sur Vercel
 
-1. Poussez ce dossier sur GitHub (voir commandes ci-dessous)
-2. Sur vercel.com → "Add New Project" → importez le repo → Deploy (aucune config nécessaire)
+1. Poussez ce dossier sur GitHub
+2. Sur vercel.com → "Add New Project" → importez le repo → ajoutez `AIRTABLE_TOKEN` → Deploy
 
 ## Commandes Git
 
 ```
 cd studeria-dashboard
-git init
 git add .
-git commit -m "Dashboard de suivi des apprenants"
-git branch -M main
-git remote add origin https://github.com/<votre-compte>/studeria-dashboard.git
-git push -u origin main
+git commit -m "Connexion Airtable via fonction serveur"
+git push
 ```
