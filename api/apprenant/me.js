@@ -16,35 +16,27 @@ function mapStatut(raw) {
   }
 }
 
-function mapCoaching(raw) {
-  if (!raw) return "Inconnu";
-
-  const value = String(raw).toLowerCase();
-
-  if (value.includes("terminé")) return "Terminé";
-  if (value.includes("en cours")) return "En cours";
-  if (value.includes("pas commencé")) return "Pas commencé";
-
-  return raw;
-}
-
 export default async function handler(req, res) {
+  // On autorise uniquement GET
   if (req.method !== "GET") {
     return res.status(405).json({
       error: "Méthode non autorisée",
     });
   }
 
+  // Token Airtable stocké dans Vercel
   const token = process.env.AIRTABLE_TOKEN;
 
   if (!token) {
     return res.status(500).json({
       error: "AIRTABLE_TOKEN manquant",
       detail:
-        "Vérifie la variable AIRTABLE_TOKEN dans Vercel → Settings → Environment Variables.",
+        "Vérifie AIRTABLE_TOKEN dans Vercel → Settings → Environment Variables.",
     });
   }
 
+  // Pour l'instant, l'email est passé dans l'URL pour tester.
+  // L'authentification sécurisée sera ajoutée ensuite.
   const email = String(req.query.email || "")
     .trim()
     .toLowerCase();
@@ -53,14 +45,16 @@ export default async function handler(req, res) {
     return res.status(400).json({
       error: "Email manquant",
       detail:
-        "Ajoute ?email=adresse@email.fr à l'URL pour le test.",
+        "Pour le test, utilise ?email=adresse@email.fr",
     });
   }
 
   try {
+    // Protection des guillemets éventuels
     const safeEmail = email.replace(/"/g, '\\"');
 
-    const formula = `LOWER({Status})="${safeEmail}"`;
+    // Recherche de l'apprenant par son email
+    const formula = `LOWER({Email})="${safeEmail}"`;
 
     const url = new URL(
       `https://api.airtable.com/v0/${BASE_ID}/${TABLE_ID}`
@@ -85,16 +79,18 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
+    // Aucun apprenant correspondant
     if (!data.records || data.records.length === 0) {
       return res.status(404).json({
         error: "Aucun apprenant trouvé",
-        detail: `Aucun dossier avec l'adresse ${email}`,
+        detail: `Aucun dossier trouvé pour ${email}`,
       });
     }
 
     const rec = data.records[0];
     const f = rec.fields;
 
+    // Progression
     const progressRaw = f["Progression (%)"] || "";
 
     const progress =
@@ -105,6 +101,7 @@ export default async function handler(req, res) {
         10
       ) || 0;
 
+    // Données envoyées au dashboard apprenant
     const apprenant = {
       id: rec.id,
 
@@ -119,7 +116,7 @@ export default async function handler(req, res) {
 
       nom: f["Nom"] || "",
 
-      email: f["Status"] || "",
+      email: f["Email"] || "",
 
       telephone:
         f["Téléphone"] ||
@@ -148,7 +145,7 @@ export default async function handler(req, res) {
       typeSuivi:
         f["Type de suivi"] || "",
 
-      statut:
+      statutFormation:
         mapStatut(
           f["Statut formation"]
         ),
@@ -157,11 +154,6 @@ export default async function handler(req, res) {
         f["Statut dossier"] || "",
 
       progress,
-
-      coaching:
-        mapCoaching(
-          f["Statut coaching individuel"] || ""
-        ),
 
       prochainRdv:
         f["Prochain RDV"] || null,
@@ -205,15 +197,20 @@ export default async function handler(req, res) {
         f["Lien accès plateforme Softr"] || null,
     };
 
+    // Pas de cache long pour des données personnelles
     res.setHeader(
       "Cache-Control",
-      "s-maxage=30, stale-while-revalidate=60"
+      "private, no-store"
     );
 
     return res.status(200).json({
       apprenant,
     });
+
   } catch (err) {
+
+    console.error("Erreur API apprenant :", err);
+
     return res.status(502).json({
       error: "Échec de récupération Airtable",
       detail: String(err),
